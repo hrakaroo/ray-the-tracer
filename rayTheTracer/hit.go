@@ -10,8 +10,6 @@ type Hits struct {
 	index int
 }
 
-//type Hits []Hit
-
 func (h *Hits) Len() int {
 	return h.index
 }

@@ -13,7 +13,7 @@ type Cube struct {
 	Transform []Matrix
 }
 
-func makeCube(center Point, size float64, color color.RGBA64) Cube {
+func NewCube(center Point, size float64, color color.RGBA64) Cube {
 
 	bottom := Plane{Vector{0, -1, 0}, size}
 	top := Plane{Vector{0, 1, 0}, size}

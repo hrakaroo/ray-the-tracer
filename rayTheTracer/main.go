@@ -26,6 +26,7 @@ type Environment struct {
 	height             int
 	eye                Point
 	light              Point
+	jitter             int
 }
 
 type Point2D struct {
@@ -84,7 +85,7 @@ func main() {
 	//ball2 := Sphere{Point{150.0, 125.0, 0.0}, 80.0, green}
 
 	// cube := Cube{[8]Ray{top, bottom, left, right, front, back}, blue}
-	cube := makeCube(Point{0, 0, 0}, 50, blue)
+	cube := NewCube(Point{0, 0, 0}, 50, blue)
 
 	// shapes := []Shape{ball1, ball2, cube}
 	//shapes := []Shape{ball1, ball2}
@@ -110,6 +111,7 @@ func main() {
 		height:             img.Rect.Dy(),
 		eye:                Point{150, -200, -400.0},
 		light:              Point{100, -400, -400},
+		jitter:             3,
 	}
 
 	renderChan := make(chan Point2D, 5)
@@ -161,17 +163,24 @@ func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan
 			ty := float64(point.Y - halfy)
 
 			// This will hold all of the dots from our jitter
-			dots := make([]color.RGBA64, 9)
+			dots := make([]color.RGBA64, environment.jitter*environment.jitter)
+
+			var increment, offset float64
+			if environment.jitter == 1 {
+				increment = 0.0
+				offset = 0.0
+			} else {
+				increment = 1.0 / (float64(environment.jitter) - 1.0)
+				offset = 0.5
+			}
 
 			// Our jitter
 			index := 0
-			for xp := -1; xp < 2; xp++ {
-				for yp := -1; yp < 2; yp++ {
+			for xj := 0; xj < environment.jitter; xj++ {
+				for yj := 0; yj < environment.jitter; yj++ {
 
-					//xx := tx + float64(xp)*0.3
-					//yy := ty + float64(yp)*0.3
-					xx := tx
-					yy := ty
+					xx := tx - offset + increment*float64(xj)
+					yy := ty - offset + increment*float64(yj)
 
 					hits := make(map[float64]color.RGBA64)
 
