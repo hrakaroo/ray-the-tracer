@@ -5,7 +5,6 @@ import (
 	"math"
 )
 
-
 // All points on the sphere satisfy
 //     x^2 + y^2 + z^2 = r^2
 //  basically the distance equation.
@@ -73,14 +72,14 @@ func (sphere Sphere) intersect(ray Ray) (bool, float64) {
 
 	// Since we are dealing with unit vector a == 1
 
-	b := 2.0 * ray.Direction.X * nx +
-	2.0 * ray.Direction.Y * ny +
-	2.0 * ray.Direction.Z * nz
+	b := 2.0*ray.Direction.X*nx +
+		2.0*ray.Direction.Y*ny +
+		2.0*ray.Direction.Z*nz
 
-	c := nx * nx +
-	ny * ny +
-	nz * nz -
-	sphere.Radius * sphere.Radius
+	c := nx*nx +
+		ny*ny +
+		nz*nz -
+		sphere.Radius*sphere.Radius
 
 	// Quadratic equation.  -b +/- sqrt(b^2 - 4ac) / 2a
 	//   again, a == 1 so this reduces to
@@ -89,7 +88,7 @@ func (sphere Sphere) intersect(ray Ray) (bool, float64) {
 	//  intersection
 	//
 
-	g := b * b - 4.0 * c
+	g := b*b - 4.0*c
 
 	// if this value is less than zero there is no solution so no hit
 	// if it is equal zero then there is one intersection point

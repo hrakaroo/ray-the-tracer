@@ -6,10 +6,38 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"runtime/pprof"
+	"sync"
 )
 
-var img = image.NewRGBA64(image.Rect(0, 0, 800, 800))
+var (
+	red   = color.RGBA64{R: 0xffff, A: 0xffff}
+	green = color.RGBA64{G: 0xffff, A: 0xffff}
+	black = color.RGBA64{A: 0xffff}
+	white = color.RGBA64{R: 0xffff, G: 0xffff, B: 0xffff, A: 0xffff}
+	blue  = color.RGBA64{G: 0xff, B: 0xffff, A: 0xffff}
+)
 
+type Environment struct {
+	ambientCoefficient float64
+	diffuseCoefficient float64
+	shapes             []Shape
+	width              int
+	height             int
+	eye                Point
+	light              Point
+}
+
+type Point2D struct {
+	X int
+	Y int
+}
+
+type ColoredPoint2D struct {
+	X     int
+	Y     int
+	color color.RGBA64
+}
 
 func shadeColor(c color.RGBA64, percent float64) color.RGBA64 {
 
@@ -17,7 +45,7 @@ func shadeColor(c color.RGBA64, percent float64) color.RGBA64 {
 	green := uint16(float64(c.G) * percent)
 	blue := uint16(float64(c.B) * percent)
 
-	return color.RGBA64{red, green, blue, 65535}
+	return color.RGBA64{R: red, G: green, B: blue, A: 65535}
 }
 
 func averageColor(dots []color.RGBA64) color.RGBA64 {
@@ -36,66 +64,126 @@ func averageColor(dots []color.RGBA64) color.RGBA64 {
 
 	l := len(dots)
 
-	return color.RGBA64{uint16(r / l), uint16(g / l), uint16(b / l), uint16(a / l)}
+	return color.RGBA64{R: uint16(r / l), G: uint16(g / l), B: uint16(b / l), A: uint16(a / l)}
 }
-
-
 
 func main() {
 
-	 //red := color.RGBA64{0xffff, 0, 0, 0xffff}
-	 //green := color.RGBA64{0, 0xffff, 0, 0xffff}
-	//black := color.RGBA64{0, 0, 0, 0xffff}
-	white := color.RGBA64{0xffff, 0xffff, 0xffff, 0xffff}
-	blue := color.RGBA64{0, 0xff, 0xffff, 0xffff}
-	ambient_coefficient := .2
-	diffuse_coefficient := .8
+	f, err := os.Create("run.prof")
+	if err != nil {
+		panic("Could not create prof")
+	}
 
-	 //ball1 := Sphere{Point{250.0, 100.0, 0.0}, 50.0, red}
-	 //ball2 := Sphere{Point{150.0, 125.0, 0.0}, 80.0, green}
+	err = pprof.StartCPUProfile(f)
+	if err != nil {
+		panic("failed to start profile")
+	}
+	defer pprof.StopCPUProfile()
+
+	//ball1 := Sphere{Point{250.0, 100.0, 0.0}, 50.0, red}
+	//ball2 := Sphere{Point{150.0, 125.0, 0.0}, 80.0, green}
 
 	// cube := Cube{[8]Ray{top, bottom, left, right, front, back}, blue}
 	cube := makeCube(Point{0, 0, 0}, 50, blue)
 
 	// shapes := []Shape{ball1, ball2, cube}
 	//shapes := []Shape{ball1, ball2}
-	shapes := []Shape{cube}
 
-	eye := Point{150, -200, -400.0}
-	light := Point{100, -400, -400}
+	img := image.NewRGBA64(image.Rect(0, 0, 800, 800))
 
-	halfx := img.Rect.Dx() / 2
-	halfy := img.Rect.Dy() / 2
+	drawChan := make(chan ColoredPoint2D, 500)
 
-	// Walk the screen left to right, top to bottom (or bottom to top, I'm not sure)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		for point := range drawChan {
+			img.Set(point.X, point.Y, point.color)
+		}
+		wg.Done()
+	}()
+
+	environment := Environment{
+		ambientCoefficient: 0.2,
+		diffuseCoefficient: 0.8,
+		shapes:             []Shape{cube},
+		width:              img.Rect.Dx(),
+		height:             img.Rect.Dy(),
+		eye:                Point{150, -200, -400.0},
+		light:              Point{100, -400, -400},
+	}
+
+	renderChan := make(chan Point2D, 5)
+	go renderPoint(renderChan, environment, drawChan)
+
+	// Walk the screen left to right, top to bottom
+	//  (or bottom to top, I'm not sure)
 	for x := 0; x < img.Rect.Dx(); x++ {
 		for y := 0; y < img.Rect.Dy(); y++ {
+			renderChan <- Point2D{x, y}
+		}
+	}
+	close(renderChan)
 
+	wg.Wait()
+
+	name := "drawing.png"
+
+	fmt.Println("Writing file", name)
+	f, err = os.Create(name)
+	if err != nil {
+		panic(err)
+	}
+
+	err = png.Encode(f, img)
+	if err != nil {
+		panic("Failed to encode image")
+	}
+
+	err = f.Close()
+	if err != nil {
+		panic("Failed to close file")
+	}
+}
+
+func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan ColoredPoint2D) {
+
+	halfx := environment.width / 2
+	halfy := environment.height / 2
+
+	var wg sync.WaitGroup
+
+	for point := range renderChan {
+		wg.Add(1)
+		go func(point Point2D) {
+			defer wg.Done()
 			// Translate our x and y so that 0, 0 is in the center
-			tx := float64(x - halfx)
-			ty := float64(y - halfy)
+			tx := float64(point.X - halfx)
+			ty := float64(point.Y - halfy)
 
 			// This will hold all of the dots from our jitter
-			var dots []color.RGBA64
+			dots := make([]color.RGBA64, 9)
 
 			// Our jitter
-			for xp := -2; xp < 5; xp++ {
-				for yp := -2; yp < 5; yp++ {
+			index := 0
+			for xp := -1; xp < 2; xp++ {
+				for yp := -1; yp < 2; yp++ {
+
+					//xx := tx + float64(xp)*0.3
+					//yy := ty + float64(yp)*0.3
+					xx := tx
+					yy := ty
 
 					hits := make(map[float64]color.RGBA64)
 
-					for _, shape := range shapes {
-
-						xx := tx + float64(xp) * 0.3
-						yy := ty + float64(yp) * 0.3
+					for _, shape := range environment.shapes {
 
 						// Create a unit vector from our eye
-						ray := unitRay(eye, Point{xx, yy, 0.0})
+						ray := unitRay(environment.eye, Point{xx, yy, 0.0})
 
 						// Calculate the point of intersect
 						hit, m := shape.intersect(ray)
 
-						if ! hit {
+						if !hit {
 							continue
 						}
 
@@ -104,18 +192,18 @@ func main() {
 						// Normal unit vector out of the sphere
 						normal := shape.normal(p)
 
-						shade := - dotProduct(normal, unitRay(light, p).Direction)
-						if ( shade < 0 ) {
+						shade := -dotProduct(normal, unitRay(environment.light, p).Direction)
+						if shade < 0 {
 							shade = 0
 						}
 
-						point_color := shadeColor(shape.getColor(),
-							ambient_coefficient + diffuse_coefficient * shade)
+						pointColor := shadeColor(shape.getColor(),
+							environment.ambientCoefficient+environment.diffuseCoefficient*shade)
 
-						hits[m] = point_color
+						hits[m] = pointColor
 					}
 
-					color := white
+					pointColor := white
 
 					if len(hits) > 0 {
 
@@ -124,29 +212,23 @@ func main() {
 
 						// Find the closest one
 						for k, v := range hits {
-							if ! set || k < last {
+							if !set || k < last {
 								last = k
-								color = v
+								pointColor = v
 								set = true
 							}
 						}
 					}
 
-					dots = append(dots, color)
+					dots[index] = pointColor
+					index++
 				}
 			}
 
-			img.Set(x, y, averageColor(dots))
-		}
+			drawChan <- ColoredPoint2D{X: point.X, Y: point.Y, color: averageColor(dots)}
+		}(point)
 	}
 
-	name := "drawing.png"
-
-	fmt.Println("Writing file", name)
-	f, err := os.Create(name)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	png.Encode(f, img)
+	wg.Wait()
+	close(drawChan)
 }

@@ -2,8 +2,8 @@
 package main
 
 import (
-	"math"
 	"image/color"
+	"math"
 )
 
 type Row struct {
@@ -25,7 +25,7 @@ type Point struct {
 
 func (row Row) multiplyPoint(point Point) float64 {
 	//fmt.Println("Row: ", row)
-	return row.X * point.X + row.Y * point.Y + row.Z * point.Z + row.T
+	return row.X*point.X + row.Y*point.Y + row.Z*point.Z + row.T
 }
 
 func (matrix Matrix) multiplyPoint(point Point) Point {
@@ -48,7 +48,7 @@ func (matrix Matrix) multiplyPoint(point Point) Point {
 type Vector Point
 
 func (row Row) multiplyVector(vector Vector) float64 {
-	return row.X * vector.X + row.Y * vector.Y + row.Z * vector.Z + row.T
+	return row.X*vector.X + row.Y*vector.Y + row.Z*vector.Z + row.T
 }
 
 func (matrix Matrix) multiplyVector(vector Vector) Vector {
@@ -60,12 +60,11 @@ func (matrix Matrix) multiplyVector(vector Vector) Vector {
 	return Vector{x1, y1, z1}
 }
 
-
 // A ray is best represented by a source and a direction
 //  The distance between the source and direction point
 //  should be equal to 1 (unit vector)
 type Ray struct {
-	Source Point
+	Source    Point
 	Direction Vector
 }
 
@@ -81,13 +80,12 @@ type Plane struct {
 	K      float64
 }
 
-
 func square(x float64) float64 {
 	return x * x
 }
 
 func unitVector(point Point) Vector {
-	d := math.Sqrt(point.X * point.X + point.Y * point.Y + point.Z * point.Z)
+	d := math.Sqrt(point.X*point.X + point.Y*point.Y + point.Z*point.Z)
 
 	return Vector{point.X / d, point.Y / d, point.Z / d}
 }
@@ -101,7 +99,7 @@ func unitRay(point1, point2 Point) Ray {
 	dz := point2.Z - point1.Z
 
 	// Total distance
-	d := math.Sqrt(dx * dx + dy * dy + dz * dz)
+	d := math.Sqrt(dx*dx + dy*dy + dz*dz)
 
 	// Unit x, y, z
 	ux := dx / d
@@ -111,20 +109,19 @@ func unitRay(point1, point2 Point) Ray {
 	return Ray{point1, Vector{ux, uy, uz}}
 }
 
-
 // Multiply a ray by a magnitude to get a new point
 func multiplyRay(ray Ray, magnitude float64) Point {
 
-	x := ray.Source.X + ray.Direction.X * magnitude
-	y := ray.Source.Y + ray.Direction.Y * magnitude
-	z := ray.Source.Z + ray.Direction.Z * magnitude
+	x := ray.Source.X + ray.Direction.X*magnitude
+	y := ray.Source.Y + ray.Direction.Y*magnitude
+	z := ray.Source.Z + ray.Direction.Z*magnitude
 
 	return Point{x, y, z}
 }
 
 func dotProduct(vector1, vector2 Vector) float64 {
 
-	return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
+	return vector1.X*vector2.X + vector1.Y*vector2.Y + vector1.Z*vector2.Z
 }
 
 type Shape interface {

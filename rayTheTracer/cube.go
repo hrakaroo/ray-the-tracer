@@ -2,30 +2,30 @@ package main
 
 import (
 	"image/color"
-	"sort"
 	"math"
+	"sort"
 )
 
 // A cube is represented (for now) as a set of 6 planes
 type Cube struct {
-	Planes [6] Plane
-	Color  color.RGBA64
+	Planes    [6]Plane
+	Color     color.RGBA64
 	Transform []Matrix
 }
 
 func makeCube(center Point, size float64, color color.RGBA64) Cube {
 
-	bottom := Plane{ Vector{0, -1, 0}, size }
+	bottom := Plane{Vector{0, -1, 0}, size}
 	top := Plane{Vector{0, 1, 0}, size}
 	left := Plane{Vector{-1, 0, 0}, size}
 	right := Plane{Vector{1, 0, 0}, size}
 	front := Plane{Vector{0, 0, -1}, size}
 	back := Plane{Vector{0, 0, 1}, size}
 
-	matrix := Matrix{ [4]Row{Row{ 1, 0, 0, 0 },
-		                      Row{ 0, 1, 0, 0 },
-	                         Row{ 0, 0, 1, 0 },
-	                         Row{ 0, 0, 0, 1 } } }
+	matrix := Matrix{[4]Row{Row{1, 0, 0, 0},
+		Row{0, 1, 0, 0},
+		Row{0, 0, 1, 0},
+		Row{0, 0, 0, 1}}}
 
 	return Cube{[6]Plane{bottom, top, left, right, front, back}, color, []Matrix{matrix}}
 }
@@ -74,7 +74,7 @@ func (cube Cube) intersect(ray Ray) (bool, float64) {
 
 	// For the distance between the point and the plane, lets use the normal
 	//  x*xn + y*yn + z*zn = k
-   // There exists some point on the plane such that some magnitude of
+	// There exists some point on the plane such that some magnitude of
 	//  the normal plus this point intersects the origin.
 	//    (x, y, z) + m * N = (0, 0, 0)
 	//    x + m * xn = 0  => x = - m * xn
@@ -94,7 +94,7 @@ func (cube Cube) intersect(ray Ray) (bool, float64) {
 	//   rx + m * dx = x
 	//   ry + m * dy = y
 	//   rz + m * dz = z
-   //
+	//
 	//  We also know that a the dot product between a vector from that point and the origin and
 	//  the original line must be zero as they are perpendicular
 	//  (x, y, z) dot ( dx, dy, dz) = 0
@@ -110,7 +110,7 @@ func (cube Cube) intersect(ray Ray) (bool, float64) {
 	//  From here we can calculate the point and then the distance to the origin
 	//
 
-	var hits Hits
+	hits := Hits{hits: make([]Hit, 6)}
 
 	for _, plane := range cube.Planes {
 
@@ -124,12 +124,12 @@ func (cube Cube) intersect(ray Ray) (bool, float64) {
 			// Figure out the distance from the center to the plane
 			//  m = - k / (xn*xn + yn*yn + zn*zn)
 
-         plane_d := plane.K / (square(plane.Normal.X) + square(plane.Normal.Y) + square(plane.Normal.Z))
+			plane_d := plane.K / (square(plane.Normal.X) + square(plane.Normal.Y) + square(plane.Normal.Z))
 
 			// Now determine the distance from the line to the center.
-			m := - (ray.Source.X * ray.Direction.X + ray.Source.Y * ray.Direction.Y + ray.Source.Z * ray.Direction.Z)
-			closest_point := multiplyRay(ray, m)
-			line_d := math.Sqrt( square(closest_point.X) + square(closest_point.Y) + square(closest_point.Z))
+			m := -(ray.Source.X*ray.Direction.X + ray.Source.Y*ray.Direction.Y + ray.Source.Z*ray.Direction.Z)
+			closestPoint := multiplyRay(ray, m)
+			line_d := math.Sqrt(square(closestPoint.X) + square(closestPoint.Y) + square(closestPoint.Z))
 
 			if line_d >= plane_d {
 				return false, 0
@@ -137,22 +137,23 @@ func (cube Cube) intersect(ray Ray) (bool, float64) {
 			continue
 		}
 
-		n := plane.K - (ray.Source.X * plane.Normal.X +
-		ray.Source.Y * plane.Normal.Y +
-		ray.Source.Z * plane.Normal.Z)
+		n := plane.K - (ray.Source.X*plane.Normal.X +
+			ray.Source.Y*plane.Normal.Y +
+			ray.Source.Z*plane.Normal.Z)
 
 		m := n / dot
 
-		hits = append(hits, Hit{m, dot})
+		hits.Add(Hit{m, dot})
 	}
 
-	sort.Sort(hits)
+	sort.Sort(&hits)
 
 	// Assume the first hit is going in
 	in := true
 
 	last_m := 0.0
-	for _, hit := range hits {
+	for i := 0; i < hits.Len(); i++ {
+		hit := hits.Get(i)
 
 		if hit.dot < 0 {
 			// Normal is pointing in opposite direction of ray so this is an IN
