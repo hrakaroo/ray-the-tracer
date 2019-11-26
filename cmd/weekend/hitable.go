@@ -1,35 +1,33 @@
 package main
 
-type HitRecord struct {
+type Hit struct {
 	Scalar float64
 	Point Vec3
 	Normal Vec3
 }
 
-type Hitable interface {
-	Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord)
+type Object interface {
+	ComputeHit(ray *Ray, tMin, tMax float64) *Hit
 }
 
-type HitableList struct {
-	Hitables  []Hitable
+
+type World struct {
+	Objects  []Object
 }
 
-func (h *HitableList) Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord) {
+func (w *World) Hit(ray *Ray, tMin, tMax float64) *Hit {
 
-	var hitRecord *HitRecord
+	var hit *Hit
 
-	for _, hitable := range h.Hitables {
+	for _, object := range w.Objects {
 		// Calculate the hit
-		hit, tempHit := hitable.Hit(ray, tMin, tMax)
-		if ! hit {
-			continue
-		}
-
-		// Check for closest hit
-		if hitRecord == nil || tempHit.Scalar < hitRecord.Scalar {
-			hitRecord = tempHit
+		if tempHit := object.ComputeHit(ray, tMin, tMax); tempHit != nil {
+			// Check if its the closest
+			if hit == nil || tempHit.Scalar < hit.Scalar {
+				hit = tempHit
+			}
 		}
 	}
 
-	return hitRecord != nil, hitRecord
+	return hit
 }

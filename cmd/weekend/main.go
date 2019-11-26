@@ -9,13 +9,12 @@ import (
 )
 
 
-func myColor(ray Ray, world HitableList) Vec3 {
+func myColor(ray *Ray, world World) Vec3 {
 
+	hit := world.Hit(ray, 0.0, math.MaxFloat64)
 
-	hit, hitRecord := world.Hit(ray, 0.0, math.MaxFloat64)
-
-	if hit {
-		return NewVec3(hitRecord.Normal.X() + 1, hitRecord.Normal.Y()+1, hitRecord.Normal.Z()+1).MultiplyScalar(0.5)
+	if hit != nil {
+		return NewVec3(hit.Normal.X() + 1, hit.Normal.Y()+1, hit.Normal.Z()+1).MultiplyScalar(0.5)
 	}
 
 	unitDirection := ray.Direction.UnitVector()
@@ -36,7 +35,7 @@ func main() {
 	vertical := NewVec3(0.0, 2.0, 0.0)
 	origin := NewVec3(0.0, 0.0, 0.0)
 
-	world := HitableList{[]Hitable{
+	world := World{[]Object{
 		NewSphere(NewVec3(0, 0, -1), 0.5),
 		NewSphere(NewVec3(0, -100.5, -1), 100)},
 	}

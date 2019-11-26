@@ -14,7 +14,7 @@ func NewSphere(center Vec3, radius float64) *Sphere {
 	}
 }
 
-func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord) {
+func (s *Sphere) ComputeHit(ray *Ray, tMin, tMax float64) *Hit {
 
 	oc := ray.Origin.SubtractVec3(s.Center)
 
@@ -26,7 +26,7 @@ func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord) {
 
 	if discriminant < 0 {
 		// miss
-		return false, nil
+		return nil
 	}
 
 	// Compute both points
@@ -40,7 +40,7 @@ func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord) {
 		if scalar < tMax && scalar > tMin {
 			point := ray.PointAt(scalar)
 
-			return true, &HitRecord{
+			return &Hit{
 				Scalar: scalar,
 				Point:  point,
 				Normal: point.SubtractVec3(s.Center).DivideScalar(s.Radius),
@@ -49,5 +49,5 @@ func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (bool, *HitRecord) {
 	}
 
 	// There was a hit, but it was outside our tMin - tMax range
-	return false, nil
+	return nil
 }
