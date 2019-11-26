@@ -4,22 +4,20 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"math"
 	"os"
 )
 
-func hitSphere(center Vec3, radius float64, ray Ray) bool {
-	oc := ray.Origin.SubtractVec3(center)
-	a := ray.Direction.Dot(ray.Direction)
-	b := 2.0 * oc.Dot(ray.Direction)
-	c := oc.Dot(oc) - radius*radius
-	discriminant := b*b - 4*a*c
-	return discriminant > 0
-}
 
-func myColor(ray Ray) Vec3 {
-	if hitSphere(NewVec3(0, 0, -1), -0.5, ray) {
-		return NewVec3(1, 0, 0)
+func myColor(ray Ray, world HitableList) Vec3 {
+
+
+	hit, hitRecord := world.Hit(ray, 0.0, math.MaxFloat64)
+
+	if hit {
+		return NewVec3(hitRecord.Normal.X() + 1, hitRecord.Normal.Y()+1, hitRecord.Normal.Z()+1).MultiplyScalar(0.5)
 	}
+
 	unitDirection := ray.Direction.UnitVector()
 	t := 0.5 * (unitDirection.Y() + 1.0)
 	return NewVec3(1.0, 1.0, 1.0).
@@ -38,6 +36,11 @@ func main() {
 	vertical := NewVec3(0.0, 2.0, 0.0)
 	origin := NewVec3(0.0, 0.0, 0.0)
 
+	world := HitableList{[]Hitable{
+		NewSphere(NewVec3(0, 0, -1), 0.5),
+		NewSphere(NewVec3(0, -100.5, -1), 100)},
+	}
+
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {
 
@@ -46,7 +49,7 @@ func main() {
 
 			ray := NewRay(origin, lowerLeftCorner.AddVec3(horizontal.MultiplyScalar(h)).AddVec3(vertical.MultiplyScalar(v)))
 
-			col := myColor(ray)
+			col := myColor(ray, world)
 
 			//unitDirection := ray.Direction.UnitVector()
 			//t := 0.5 * (unitDirection.Y() + 1.0)
