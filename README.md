@@ -1,3 +1,4 @@
+## Ray the Tracer
 
 In graduate school I took a 3D rendering class and wrote a ray tracing
 renderer in C++ using the Qt libraries for drawing.  The class was
@@ -13,6 +14,11 @@ to try writing it in Go so I can take advantage of the parallel
 processing and memory management.  I'm also specifically not taking
 shortcuts for the sake of clarity.
 
-I'm also using this book as a reference
-[Ray Tracing in a Weekend](https://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf)
+The ray tracer in the [sodaWaterRayTracer](sodaWaterRayTracer) folder 
+is my independent attempt to build a ray tracer.  I got part way through 
+this project and realized that I was spending too much time re-deriving 
+all of the math equations and decided to instead use a reference book. 
 
+The ray tracer in the [weekend](weekend) folder is my attempt to build a 
+ray tracer from the book
+[Ray Tracing in a Weekend](https://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf)
