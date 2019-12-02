@@ -28,7 +28,8 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 	}
 
 	// Compute both points
-	// Note from the book: I eliminated a bunch of redundant 2's that cancel each other out
+	// Note from the book: "I eliminated a bunch of redundant 2's that cancel each other out"
+	// todo - Prove this ... as I'm not 100% sure we can just drop the 2's
 	sqrt := math.Sqrt(b*b - a*c)
 	scalar1 := (-b - sqrt)/a
 	scalar2 := (-b + sqrt)/a

@@ -5,6 +5,9 @@ import (
 	"math"
 )
 
+/**
+Our generic 3 value struct.  We will use this for points, colors and directions.
+ */
 type Vec3 struct {
 	v1 float64
 	v2 float64
@@ -82,6 +85,10 @@ func (v Vec3) SquaredLength() float64 {
 func (v Vec3) UnitVector() Vec3 {
 	l := v.Length()
 	return NewVec3(v.v1/l, v.v2/l, v.v3/l)
+}
+
+func (v Vec3) Gamma2() Vec3 {
+	return NewVec3(math.Sqrt(v.v1), math.Sqrt(v.v2), math.Sqrt(v.v3))
 }
 
 func (v Vec3) RGBA() color.RGBA64 {
