@@ -3,14 +3,16 @@ package main
 import "math"
 
 type Sphere struct {
-	Center Vec3
-	Radius float64
+	Center   Vec3
+	Radius   float64
+	Material Material
 }
 
-func NewSphere(center Vec3, radius float64) *Sphere {
+func NewSphere(center Vec3, radius float64, material Material) *Sphere {
 	return &Sphere{
-		Center: center,
-		Radius: radius,
+		Center:   center,
+		Radius:   radius,
+		Material: material,
 	}
 }
 
@@ -31,8 +33,8 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 	// Note from the book: "I eliminated a bunch of redundant 2's that cancel each other out"
 	// todo - Prove this ... as I'm not 100% sure we can just drop the 2's
 	sqrt := math.Sqrt(b*b - a*c)
-	scalar1 := (-b - sqrt)/a
-	scalar2 := (-b + sqrt)/a
+	scalar1 := (-b - sqrt) / a
+	scalar2 := (-b + sqrt) / a
 
 	// scalar1 is closer than scalar2 so test it first
 	for _, scalar := range []float64{scalar1, scalar2} {
@@ -49,4 +51,8 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 
 	// There was a hit, but it was outside our tMin - tMax range
 	return nil
+}
+
+func (s *Sphere) GetMaterial() Material {
+	return s.Material
 }

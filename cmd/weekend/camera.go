@@ -1,10 +1,10 @@
 package main
 
 type Camera struct {
-	 LowerLeftCorner Vec3
-	 Horizontal Vec3
-	 Vertical Vec3
-	 Origin Vec3
+	LowerLeftCorner Vec3
+	Horizontal      Vec3
+	Vertical        Vec3
+	Origin          Vec3
 }
 
 // todo - I don't understand why the range for x is 4 but 2 for y

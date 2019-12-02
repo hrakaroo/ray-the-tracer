@@ -7,7 +7,7 @@ import (
 
 /**
 Our generic 3 value struct.  We will use this for points, colors and directions.
- */
+*/
 type Vec3 struct {
 	v1 float64
 	v2 float64
@@ -89,6 +89,19 @@ func (v Vec3) UnitVector() Vec3 {
 
 func (v Vec3) Gamma2() Vec3 {
 	return NewVec3(math.Sqrt(v.v1), math.Sqrt(v.v2), math.Sqrt(v.v3))
+}
+
+func (v Vec3) IsBlack() bool {
+	return math.Abs(v.v1) < 0.0001 && math.Abs(v.v2) < 0.0001 && math.Abs(v.v3) < 0.0001
+}
+
+/**
+From the book:
+The reflected ray direction is just v+2B where B = dot(v, N).  The
+subtract is to point v out.
+*/
+func (v Vec3) Reflect(normal Vec3) Vec3 {
+	return v.SubtractVec3(normal.MultiplyScalar(v.Dot(normal) * 2.0))
 }
 
 func (v Vec3) RGBA() color.RGBA64 {
