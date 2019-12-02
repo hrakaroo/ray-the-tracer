@@ -14,7 +14,7 @@ func NewSphere(center Vec3, radius float64) *Sphere {
 	}
 }
 
-func (s *Sphere) ComputeHit(ray *Ray, tMin, tMax float64) *Hit {
+func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 
 	oc := ray.Origin.SubtractVec3(s.Center)
 
@@ -22,9 +22,7 @@ func (s *Sphere) ComputeHit(ray *Ray, tMin, tMax float64) *Hit {
 	b := oc.Dot(ray.Direction)
 	c := oc.Dot(oc) - s.Radius*s.Radius
 
-	discriminant := b*b - a*c
-
-	if discriminant < 0 {
+	if discriminant := b*b - a*c; discriminant < 0 {
 		// miss
 		return nil
 	}

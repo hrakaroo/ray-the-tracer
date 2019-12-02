@@ -84,7 +84,7 @@ func (v Vec3) UnitVector() Vec3 {
 	return NewVec3(v.v1/l, v.v2/l, v.v3/l)
 }
 
-func (v Vec3) Color() color.RGBA64 {
+func (v Vec3) RGBA() color.RGBA64 {
 	return color.RGBA64{
 		R: uint16(float64(0xfffe) * v.v1),
 		G: uint16(float64(0xfffe) * v.v2),

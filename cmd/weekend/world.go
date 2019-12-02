@@ -7,15 +7,14 @@ type Hit struct {
 }
 
 type Object interface {
-	ComputeHit(ray *Ray, tMin, tMax float64) *Hit
+	ComputeHit(ray Ray, tMin, tMax float64) *Hit
 }
-
 
 type World struct {
 	Objects  []Object
 }
 
-func (w *World) Hit(ray *Ray, tMin, tMax float64) *Hit {
+func (w *World) Hit(ray Ray, tMin, tMax float64) *Hit {
 
 	var hit *Hit
 
