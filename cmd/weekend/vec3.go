@@ -91,8 +91,11 @@ func (v Vec3) Gamma2() Vec3 {
 	return NewVec3(math.Sqrt(v.v1), math.Sqrt(v.v2), math.Sqrt(v.v3))
 }
 
-func (v Vec3) IsBlack() bool {
-	return math.Abs(v.v1) < 0.0001 && math.Abs(v.v2) < 0.0001 && math.Abs(v.v3) < 0.0001
+/**
+Is essentially close enough to zero
+ */
+func (v Vec3) IsZero() bool {
+	return math.Abs(v.v1) < 0.00001 && math.Abs(v.v2) < 0.00001 && math.Abs(v.v3) < 0.00001
 }
 
 /**
@@ -102,6 +105,16 @@ subtract is to point v out.
 */
 func (v Vec3) Reflect(normal Vec3) Vec3 {
 	return v.SubtractVec3(normal.MultiplyScalar(v.Dot(normal) * 2.0))
+}
+
+func (v Vec3) Refract(normal Vec3, niOverNt float64) (bool, Vec3) {
+	uv := v.UnitVector()
+	dt := uv.Dot(normal)
+	discriminant := 1.0 - niOverNt*niOverNt*(1-dt*dt)
+	if discriminant > 0 {
+		return true, uv.SubtractVec3(normal.MultiplyScalar(dt)).MultiplyScalar(niOverNt).SubtractVec3(normal.MultiplyScalar(math.Sqrt(discriminant)))
+	}
+	return false, Vec3{}
 }
 
 func (v Vec3) RGBA() color.RGBA64 {

@@ -20,7 +20,7 @@ func myColor(ray Ray, world World, depth int) Vec3 {
 		}
 
 		color, scattered := material.Scatter(ray, hit)
-		if color.IsBlack() {
+		if color.IsZero() {
 			// It's essentially black so don't keep bouncing
 			return color
 		} else {
@@ -45,10 +45,11 @@ func main() {
 
 	world := World{
 		[]Object{
-			NewSphere(NewVec3(0, 0, -1), 0.5, NewLambertian(NewVec3(0.8, 0.3, 0.3))),
+			NewSphere(NewVec3(0, 0, -1), 0.5, NewLambertian(NewVec3(0.1, 0.2, 0.5))),
 			NewSphere(NewVec3(0, -100.5, -1), 100, NewLambertian(NewVec3(0.8, 0.8, 0.0))),
-			NewSphere(NewVec3(1, 0, -1), 0.5, NewMetal(NewVec3(0.8, 0.6, 0.2), 1.0)),
-			NewSphere(NewVec3(-1, 0, -1), 0.5, NewMetal(NewVec3(0.8, 0.8, 0.8), 0.3)),
+			NewSphere(NewVec3(1, 0, -1), 0.5, NewMetal(NewVec3(0.8, 0.6, 0.2), 0.0)),
+			NewSphere(NewVec3(-1, 0, -1), 0.5, NewDieletric( 1.5)),
+			NewSphere(NewVec3(-1, 0, -1), -0.45, NewDieletric( 1.5)),
 		},
 	}
 
