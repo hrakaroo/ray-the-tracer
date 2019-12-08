@@ -70,7 +70,7 @@ func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 	} else {
 		outwardNormal = hit.Normal
 		niOverNt = 1.0 / d.RefractionIndex
-		cosine = - ray.Direction.Dot(hit.Normal) / ray.Direction.Length()
+		cosine = -ray.Direction.Dot(hit.Normal) / ray.Direction.Length()
 	}
 
 	if refracts, refracted := ray.Direction.Refract(outwardNormal, niOverNt); refracts {
@@ -82,13 +82,11 @@ func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 	return color, NewRay(hit.Point, reflected)
 }
 
-
 func schlick(cosine, refractionIndex float64) float64 {
-	r0 := (1.0-refractionIndex) / (1+refractionIndex)
-	r0 = r0*r0
+	r0 := (1.0 - refractionIndex) / (1 + refractionIndex)
+	r0 = r0 * r0
 	return r0 + (1-r0)*math.Pow((1-cosine), 5)
 }
-
 
 /**
 Create a random direction in a unit sphere.

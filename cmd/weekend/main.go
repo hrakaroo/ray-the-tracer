@@ -48,12 +48,17 @@ func main() {
 			NewSphere(NewVec3(0, 0, -1), 0.5, NewLambertian(NewVec3(0.1, 0.2, 0.5))),
 			NewSphere(NewVec3(0, -100.5, -1), 100, NewLambertian(NewVec3(0.8, 0.8, 0.0))),
 			NewSphere(NewVec3(1, 0, -1), 0.5, NewMetal(NewVec3(0.8, 0.6, 0.2), 0.0)),
-			NewSphere(NewVec3(-1, 0, -1), 0.5, NewDieletric( 1.5)),
-			NewSphere(NewVec3(-1, 0, -1), -0.45, NewDieletric( 1.5)),
+			NewSphere(NewVec3(-1, 0, -1), 0.5, NewDieletric(1.5)),
+			NewSphere(NewVec3(-1, 0, -1), -0.45, NewDieletric(1.5)),
 		},
 	}
 
-	camera := NewCamera()
+	lookFrom := NewVec3(3, 3, 2)
+	lookAt := NewVec3( 0, 0, -1)
+	distToFocus := lookFrom.SubtractVec3(lookAt).Length()
+	aperture := 2.0
+
+	camera := NewCamera(lookFrom, lookAt, NewVec3(0, 1, 0),20.0, float64(nx)/float64(ny), aperture, distToFocus)
 
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {

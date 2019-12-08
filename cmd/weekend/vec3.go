@@ -74,6 +74,12 @@ func (v Vec3) Dot(o Vec3) float64 {
 	return v.v1*o.v1 + v.v2*o.v2 + v.v3*o.v3
 }
 
+func (v Vec3) Cross(o Vec3) Vec3 {
+	return NewVec3(v.v2*o.v3-v.v3*o.v2,
+		-(v.v1*o.v3 - v.v3*o.v1),
+		v.v1*o.v2-v.v2*o.v1)
+}
+
 func (v Vec3) Length() float64 {
 	return math.Sqrt(v.v1*v.v1 + v.v2*v.v2 + v.v3*v.v3)
 }
@@ -93,7 +99,7 @@ func (v Vec3) Gamma2() Vec3 {
 
 /**
 Is essentially close enough to zero
- */
+*/
 func (v Vec3) IsZero() bool {
 	return math.Abs(v.v1) < 0.00001 && math.Abs(v.v2) < 0.00001 && math.Abs(v.v3) < 0.00001
 }
