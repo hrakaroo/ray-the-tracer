@@ -24,7 +24,8 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 	b := oc.Dot(ray.Direction)
 	c := oc.Dot(oc) - s.Radius*s.Radius
 
-	if discriminant := b*b - a*c; discriminant < 0 {
+	discriminant := b*b - a*c
+	if discriminant <= 0 {
 		// miss
 		return nil
 	}
@@ -32,7 +33,7 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 	// Compute both points
 	// Note from the book: "I eliminated a bunch of redundant 2's that cancel each other out"
 	// todo - Prove this ... as I'm not 100% sure we can just drop the 2's
-	sqrt := math.Sqrt(b*b - a*c)
+	sqrt := math.Sqrt(discriminant)
 	scalar1 := (-b - sqrt) / a
 	scalar2 := (-b + sqrt) / a
 

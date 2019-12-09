@@ -84,10 +84,6 @@ func (v Vec3) Length() float64 {
 	return math.Sqrt(v.v1*v.v1 + v.v2*v.v2 + v.v3*v.v3)
 }
 
-func (v Vec3) SquaredLength() float64 {
-	return v.v1*v.v1 + v.v2*v.v2 + v.v3*v.v3
-}
-
 func (v Vec3) UnitVector() Vec3 {
 	l := v.Length()
 	return NewVec3(v.v1/l, v.v2/l, v.v3/l)

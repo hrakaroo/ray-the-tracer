@@ -30,3 +30,18 @@ actually incorrect?
 
 ![Image](drawing13.png)
 
+I clearly have a couple of bugs.  First of all, my defocus blur clearly
+_not_ working and I have a super grainy look.  
+
+![Image](book1.png)
+
+In attempting to debug my image I made the glass 100% refractive and that removed
+the speckles from the sky so that helps narrow it down.
+
+I'll also comment that this is one thing that this ray tracer does different from 
+SW one I built before.  In the SW one every time a single ray hit a transparent object
+it would shoot off two rays, for this ray tracer it just uses the fact that
+the anti-aliasing is sending in multiple samples and just randomly selects either
+refract or reflect.  It's an interesting difference.
+
+![Image](book2.png)

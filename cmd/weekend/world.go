@@ -20,14 +20,14 @@ func (w *World) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 	var hit *Hit
 	var material Material
 
+	closestSoFar := tMax
+
 	for _, object := range w.Objects {
 		// Calculate the hit
-		if tempHit := object.ComputeHit(ray, tMin, tMax); tempHit != nil {
-			// Check if its the closest
-			if hit == nil || tempHit.Scalar < hit.Scalar {
-				hit = tempHit
-				material = object.GetMaterial()
-			}
+		if tempHit := object.ComputeHit(ray, tMin, closestSoFar); tempHit != nil {
+			hit = tempHit
+			material = object.GetMaterial()
+			closestSoFar = tempHit.Scalar
 		}
 	}
 
