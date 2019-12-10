@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"time"
 )
 
 func myColor(ray Ray, world World, depth int) Vec3 {
@@ -90,9 +91,12 @@ func main() {
 
 	nx := 1200
 	ny := 800
-	ns := 10
+	ns := 20
 	img := image.NewRGBA64(image.Rect(0, 0, nx, ny))
 
+	rand.Seed(time.Now().UnixNano())
+
+	//world := basicWorld()
 	world := bookCover()
 
 	lookFrom := NewVec3(13, 2, 3)
@@ -117,7 +121,7 @@ func main() {
 
 			color = color.DivideScalar(float64(ns)).Gamma2()
 
-			img.Set(i, ny-(j+1), color.RGBA())
+			img.SetRGBA64(i, ny-(j+1), color.RGBA())
 		}
 	}
 

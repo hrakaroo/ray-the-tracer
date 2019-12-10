@@ -65,9 +65,11 @@ func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 	var cosine float64
 
 	if ray.Direction.Dot(hit.Normal) > 0 {
-		outwardNormal = hit.Normal.MultiplyScalar(-1)
+		outwardNormal = hit.Normal.Negate()
 		niOverNt = d.RefractionIndex
-		cosine = ray.Direction.Dot(hit.Normal) * d.RefractionIndex / ray.Direction.Length()
+		//cosine = ray.Direction.Dot(hit.Normal) * d.RefractionIndex / ray.Direction.Length()
+		cosine = ray.Direction.Dot(hit.Normal) / ray.Direction.Length()
+		cosine = math.Sqrt(1 - d.RefractionIndex * d.RefractionIndex * (1 - cosine*cosine))
 	} else {
 		outwardNormal = hit.Normal
 		niOverNt = 1.0 / d.RefractionIndex

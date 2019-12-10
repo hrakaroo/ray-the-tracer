@@ -25,32 +25,29 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 	c := oc.Dot(oc) - s.Radius*s.Radius
 
 	discriminant := b*b - a*c
-	if discriminant <= 0 {
-		// miss
-		return nil
-	}
+	if discriminant > 0 {
 
-	// Compute both points
-	// Note from the book: "I eliminated a bunch of redundant 2's that cancel each other out"
-	// todo - Prove this ... as I'm not 100% sure we can just drop the 2's
-	sqrt := math.Sqrt(discriminant)
-	scalar1 := (-b - sqrt) / a
-	scalar2 := (-b + sqrt) / a
+		// Compute both points
+		// Note from the book: "I eliminated a bunch of redundant 2's that cancel each other out"
+		// todo - Prove this ... as I'm not 100% sure we can just drop the 2's
+		sqrt := math.Sqrt(discriminant)
+		scalar1 := (-b - sqrt) / a
+		scalar2 := (-b + sqrt) / a
 
-	// scalar1 is closer than scalar2 so test it first
-	for _, scalar := range []float64{scalar1, scalar2} {
-		if scalar < tMax && scalar > tMin {
-			point := ray.PointAt(scalar)
+		// scalar1 is closer than scalar2 so test it first
+		for _, scalar := range []float64{scalar1, scalar2} {
+			if scalar < tMax && scalar > tMin {
+				point := ray.PointAt(scalar)
 
-			return &Hit{
-				Scalar: scalar,
-				Point:  point,
-				Normal: point.SubtractVec3(s.Center).DivideScalar(s.Radius),
+				return &Hit{
+					Scalar: scalar,
+					Point:  point,
+					Normal: point.SubtractVec3(s.Center).DivideScalar(s.Radius),
+				}
 			}
 		}
 	}
 
-	// There was a hit, but it was outside our tMin - tMax range
 	return nil
 }
 
