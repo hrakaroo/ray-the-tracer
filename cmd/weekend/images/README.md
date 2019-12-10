@@ -45,3 +45,21 @@ the anti-aliasing is sending in multiple samples and just randomly selects eithe
 refract or reflect.  It's an interesting difference.
 
 ![Image](book2.png)
+
+I finally figured out the bug with defocus blur not working, it was due to an accidental
+':' that was scoping a variable ... doesn't really matter.  What does matter is that it now
+works!  And I also figured out why the images looked so grainy, I just wasn't sampling enough.
+This is where I think the book doesn't do the best job explaining these things, anyhow,
+the following image is with the aperture set to 0.1
+
+![Image](book3.png)
+
+and now setting it to 1.0.
+
+![Image](book4.png)
+
+and finally to 0.05 ... I sort of like this image the best.
+
+![Image](book5.png)
+
+This phase of the project is complete.

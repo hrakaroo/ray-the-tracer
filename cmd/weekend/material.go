@@ -10,7 +10,10 @@ type Material interface {
 }
 
 /**
-aka Matte
+From Wikipedia:
+Lambertian reflectance is the property that defines an ideal "matte" or diffusely reflecting surface.
+The apparent brightness of a Lambertian surface to an observer is the same regardless of the observer's
+angle of view.
 */
 type Lambertian struct {
 	Albedo Vec3
@@ -20,16 +23,17 @@ func NewLambertian(albedo Vec3) *Lambertian {
 	return &Lambertian{Albedo: albedo}
 }
 
-func (l *Lambertian) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
-	// todo - simply this
-	target := hit.Point.AddVec3(hit.Normal).AddVec3(randomInUnitSphere())
-	scattered := NewRay(hit.Point, target.SubtractVec3(hit.Point))
+func (l *Lambertian) Scatter(_ Ray, hit *Hit) (Vec3, Ray) {
+	// Since apparent brightness is the same regardless of the observers angle, the
+	//  incoming ray is not needed.
+	// Our bounce is just the normal plus some random direction
+	scattered := NewRay(hit.Point, hit.Normal.AddVec3(randomInUnitSphere()))
 	return l.Albedo, scattered
 }
 
 type Metal struct {
 	Albedo Vec3
-	Fuzz  float64
+	Fuzz   float64
 }
 
 func NewMetal(albedo Vec3, fuzz float64) *Metal {
@@ -69,7 +73,7 @@ func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 		niOverNt = d.RefractionIndex
 		//cosine = ray.Direction.Dot(hit.Normal) * d.RefractionIndex / ray.Direction.Length()
 		cosine = ray.Direction.Dot(hit.Normal) / ray.Direction.Length()
-		cosine = math.Sqrt(1 - d.RefractionIndex * d.RefractionIndex * (1 - cosine*cosine))
+		cosine = math.Sqrt(1 - d.RefractionIndex*d.RefractionIndex*(1-cosine*cosine))
 	} else {
 		outwardNormal = hit.Normal
 		niOverNt = 1.0 / d.RefractionIndex
@@ -102,7 +106,6 @@ func randomInUnitSphere() Vec3 {
 	done := false
 	for !done {
 		// Find a random point in a cube
-		// todo - the book calls this a unit cube, but I'm not convinced it is
 		x := rand.Float64()*2.0 - 1.0
 		y := rand.Float64()*2.0 - 1.0
 		z := rand.Float64()*2.0 - 1.0
