@@ -7,8 +7,7 @@ type Hit struct {
 }
 
 type Object interface {
-	ComputeHit(ray Ray, tMin, tMax float64) *Hit
-	GetMaterial() Material
+	Hit(ray Ray, tMin, tMax float64) (*Hit, Material)
 }
 
 type World struct {
@@ -24,9 +23,9 @@ func (w *World) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 
 	for _, object := range w.Objects {
 		// Calculate the hit
-		if tempHit := object.ComputeHit(ray, tMin, closestSoFar); tempHit != nil {
+		if tempHit, tempMaterial := object.Hit(ray, tMin, closestSoFar); tempHit != nil {
 			hit = tempHit
-			material = object.GetMaterial()
+			material = tempMaterial
 			closestSoFar = tempHit.Scalar
 		}
 	}

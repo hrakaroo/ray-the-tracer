@@ -37,18 +37,6 @@ func render(ray Ray, world World, depth int) Vec3 {
 		AddVec3(NewVec3(0.5, 0.7, 1.0).MultiplyScalar(t))
 }
 
-func basicWorld() World {
-	return World{
-		[]Object{
-			NewSphere(NewVec3(0, 0, -1), 0.5, NewLambertian(NewVec3(0.1, 0.2, 0.5))),
-			NewSphere(NewVec3(0, -100.5, -1), 100, NewLambertian(NewVec3(0.8, 0.8, 0.0))),
-			NewSphere(NewVec3(1, 0, -1), 0.5, NewMetal(NewVec3(0.8, 0.6, 0.2), 0.0)),
-			NewSphere(NewVec3(-1, 0, -1), 0.5, NewDieletric(1.5)),
-			NewSphere(NewVec3(-1, 0, -1), -0.45, NewDieletric(1.5)),
-		},
-	}
-}
-
 func bookCover() World {
 
 	var objects []Object
@@ -65,15 +53,18 @@ func bookCover() World {
 
 			chooseMaterial := rand.Float64()
 			var material Material
-			if chooseMaterial < 0.6 { // diffuse
+			if chooseMaterial < 0.6 {
+				// diffuse
 				material = NewLambertian(NewVec3(rand.Float64()*rand.Float64(),
 					rand.Float64()*rand.Float64(),
 					rand.Float64()*rand.Float64()))
-			} else if chooseMaterial < 0.85 { // metal
+			} else if chooseMaterial < 0.85 {
+				// metal
 				material = NewMetal(NewVec3(0.5*(1+rand.Float64()),
 					0.5*(1+rand.Float64()),
 					0.5*(1+rand.Float64())), 0.5*rand.Float64())
-			} else { // glass
+			} else {
+				// glass
 				material = NewDieletric(1.5)
 			}
 
@@ -92,7 +83,8 @@ func main() {
 
 	nx := 1200
 	ny := 800
-	ns := 40
+	ns := 10
+	depth := 10
 	img := image.NewRGBA64(image.Rect(0, 0, nx, ny))
 
 	rand.Seed(time.Now().UnixNano())
@@ -117,7 +109,7 @@ func main() {
 				v := (float64(j) + rand.Float64()) / float64(ny)
 
 				ray := camera.GetRay(u, v)
-				color = color.AddVec3(render(ray, world, 20))
+				color = color.AddVec3(render(ray, world, depth))
 			}
 
 			color = color.DivideScalar(float64(ns)).Gamma2()

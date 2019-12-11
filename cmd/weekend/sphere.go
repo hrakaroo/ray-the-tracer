@@ -16,7 +16,7 @@ func NewSphere(center Vec3, radius float64, material Material) *Sphere {
 	}
 }
 
-func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
+func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 
 	oc := ray.Origin.SubtractVec3(s.Center)
 
@@ -43,12 +43,12 @@ func (s *Sphere) ComputeHit(ray Ray, tMin, tMax float64) *Hit {
 					Scalar: scalar,
 					Point:  point,
 					Normal: point.SubtractVec3(s.Center).DivideScalar(s.Radius),
-				}
+				}, s.Material
 			}
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (s *Sphere) GetMaterial() Material {
