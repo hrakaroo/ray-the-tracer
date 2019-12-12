@@ -1,3 +1,12 @@
+TODOs
+=====
+
+* Colored transparent objects
+* Block rotation
+* Lights and shadows
+* Caustics
+* Camera up -> tilt
+
 Ponderings
 ==========
 

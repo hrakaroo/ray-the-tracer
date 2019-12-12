@@ -1,18 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"image"
-	"image/png"
+	"image/color"
 	"math"
 	"math/rand"
-	"os"
+	"sync"
 	"time"
 )
 
-func render(ray Ray, world World, depth int) Vec3 {
+type ColoredPoint2D struct {
+	X int
+	Y int
+	C color.RGBA64
+}
 
-	hit, material := world.Hit(ray, 0.001, math.MaxFloat64)
+type Point2D struct {
+	X int
+	Y int
+}
+
+func render(ray Ray, objects World, depth int) Vec3 {
+
+	hit, material := objects.Hit(ray, 0.001, math.MaxFloat64)
 
 	if hit != nil {
 
@@ -25,7 +34,7 @@ func render(ray Ray, world World, depth int) Vec3 {
 			// It's essentially black so don't keep bouncing
 			return color
 		} else {
-			return color.MultiplyVec3(render(scattered, world, depth-1))
+			return color.MultiplyVec3(render(scattered, objects, depth-1))
 		}
 	}
 
@@ -37,12 +46,14 @@ func render(ray Ray, world World, depth int) Vec3 {
 		AddVec3(NewVec3(0.5, 0.7, 1.0).MultiplyScalar(t))
 }
 
-func bookCover() World {
+func bookCover() []Object {
 
 	var objects []Object
 
-	// Add in the massive "world"
-	objects = append(objects, NewSphere(NewVec3(0, -1000, 0), 1000, NewLambertian(NewVec3(0.5, 0.5, 0.5))))
+	// Table top
+	objects = append(objects, NewBlock(NewVec3(0, -0.25, 0), 100, 100, 0.5, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.03)))
+
+	//objects = append(objects, NewSphere(NewVec3(0, -1000, 0), 1000, NewLambertian(NewVec3(0.5, 0.5, 0.5))))
 
 	for a := -11; a < 11; a++ {
 		for b := -11; b < 11; b++ {
@@ -69,11 +80,10 @@ func bookCover() World {
 				material = NewDieletric(refractionIndex)
 			}
 
-
 			chooseShape := rand.Float64()
 			var shape Object
 			if chooseShape < 0.25 {
-				shape = NewCube(center, 0.4, material)
+				shape = NewBlock(center, 0.4, 0.4, 0.4, material)
 			} else {
 				shape = NewSphere(center, 0.2, material)
 			}
@@ -82,77 +92,102 @@ func bookCover() World {
 	}
 
 	objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
-	objects = append(objects, NewSphere(NewVec3(-4, 1, 0), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	objects = append(objects, NewSphere(NewVec3(4, 1, 0), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
+	objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
+	objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
+	//
+	//objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
+	//objects = append(objects, NewSphere(NewVec3(-4, 1, 0), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
+	//objects = append(objects, NewSphere(NewVec3(4, 1, 0), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
 
-	return World{Objects: objects}
+	return objects
 }
 
-func basicWorld() World {
+func basicWorld() []Object {
 
 	var objects []Object
 
-	// Add in the massive "world"
-	objects = append(objects, NewSphere(NewVec3(0, -1000, 0), 1000, NewLambertian(NewVec3(0.5, 0.5, 0.5))))
-	objects = append(objects, NewCube(NewVec3(0, 1, 0), 1, NewLambertian(NewVec3(0.7, 0.6, 0.5))))
+	// Table top
+	objects = append(objects, NewBlock(NewVec3(0, -0.25, 0), 100, 100, 0.5, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.03)))
 
-	return World{Objects:objects}
+	objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
+	objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
+	objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
+
+	return objects
+}
+
+func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan ColoredPoint2D) {
+
+	var wg sync.WaitGroup
+
+	for point := range renderChan {
+		wg.Add(1)
+		go func(point Point2D) {
+			defer wg.Done()
+			var c Vec3
+
+			for s := 0; s < environment.sampling; s++ {
+				u := (float64(point.X) + rand.Float64()) / float64(environment.canvas.Width)
+				v := (float64(point.Y) + rand.Float64()) / float64(environment.canvas.Height)
+
+				ray := environment.camera.GetRay(u, v)
+				c = c.AddVec3(render(ray, environment.objects, environment.bounce))
+			}
+
+			c = c.DivideScalar(float64(environment.sampling)).Gamma2()
+
+			drawChan <- ColoredPoint2D{X: point.X, Y: point.Y, C: c.RGBA()}
+		}(point)
+	}
+
+	wg.Wait()
+	close(drawChan)
 }
 
 func main() {
-
-	nx := 1200
-	ny := 800
-	ns := 50
-	depth := 30
-	img := image.NewRGBA64(image.Rect(0, 0, nx, ny))
-
 	rand.Seed(time.Now().UnixNano())
 
-	//world := basicWorld()
-	world := bookCover()
-
-	lookFrom := NewVec3(13, 3.5, 3)
+	width  := 2400
+	height := 1600
+	lookFrom := NewVec3(-5, 3, 20)
 	lookAt := NewVec3(0, 0, 0)
-	distToFocus := 10.0
+	distToFocus := 20.0
 	aperture := 0.05
 
-	camera := NewCamera(lookFrom, lookAt, NewVec3(0, 1, 0), 20.0, float64(nx)/float64(ny), aperture, distToFocus)
+	canvas := NewCanvas(width, height)
 
-	for j := ny - 1; j >= 0; j-- {
-		for i := 0; i < nx; i++ {
+	environment := Environment{
+		canvas:   canvas,
+		camera:   NewCamera(lookFrom, lookAt, NewVec3(0, 1, 0), 20.0, canvas.AspectRatio(), aperture, distToFocus),
+		sampling: 100,
+		bounce:   30,
+		objects:  bookCover(),
+	}
 
-			var color Vec3
+	drawChan := make(chan ColoredPoint2D, 500)
 
-			for s := 0; s < ns; s++ {
-				u := (float64(i) + rand.Float64()) / float64(nx)
-				v := (float64(j) + rand.Float64()) / float64(ny)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		for point := range drawChan {
+			canvas.Draw(point.X, point.Y, point.C)
+		}
+		wg.Done()
+	}()
 
-				ray := camera.GetRay(u, v)
-				color = color.AddVec3(render(ray, world, depth))
-			}
+	renderChan := make(chan Point2D, 5)
+	go renderPoint(renderChan, environment, drawChan)
 
-			color = color.DivideScalar(float64(ns)).Gamma2()
-
-			img.SetRGBA64(i, ny-(j+1), color.RGBA())
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			renderChan <- Point2D{X: x, Y: y}
 		}
 	}
 
-	name := "drawing.png"
+	// Done sending points, but need to wait for everything to finish drawing
+	close(renderChan)
 
-	fmt.Println("Writing file", name)
-	f, err := os.Create(name)
-	if err != nil {
-		panic(err)
-	}
+	wg.Wait()
 
-	err = png.Encode(f, img)
-	if err != nil {
-		panic("Failed to encode image")
-	}
-
-	err = f.Close()
-	if err != nil {
-		panic("Failed to close file")
-	}
+	canvas.write("drawing.png")
 }
