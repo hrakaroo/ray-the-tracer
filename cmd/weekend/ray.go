@@ -13,3 +13,7 @@ func (r *Ray) PointAt(scalar float64) Vec3 {
 	r.Direction.MultiplyScalar(scalar)
 	return r.Origin.AddVec3(r.Direction.MultiplyScalar(scalar))
 }
+
+func (r *Ray) SubtractVec3(point Vec3) Ray {
+	return NewRay(r.Origin.SubtractVec3(point), r.Direction)
+}

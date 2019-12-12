@@ -50,7 +50,3 @@ func (s *Sphere) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 
 	return nil, nil
 }
-
-func (s *Sphere) GetMaterial() Material {
-	return s.Material
-}
