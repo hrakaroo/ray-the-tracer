@@ -65,10 +65,19 @@ func bookCover() World {
 					0.5*(1+rand.Float64())), 0.5*rand.Float64())
 			} else {
 				// glass
-				material = NewDieletric(1.5)
+				refractionIndex := rand.Float64()/2.0 + 1.0
+				material = NewDieletric(refractionIndex)
 			}
 
-			objects = append(objects, NewSphere(center, 0.2, material))
+
+			chooseShape := rand.Float64()
+			var shape Object
+			if chooseShape < 0.25 {
+				shape = NewCube(center, 0.4, material)
+			} else {
+				shape = NewSphere(center, 0.2, material)
+			}
+			objects = append(objects, shape)
 		}
 	}
 
@@ -79,12 +88,23 @@ func bookCover() World {
 	return World{Objects: objects}
 }
 
+func basicWorld() World {
+
+	var objects []Object
+
+	// Add in the massive "world"
+	objects = append(objects, NewSphere(NewVec3(0, -1000, 0), 1000, NewLambertian(NewVec3(0.5, 0.5, 0.5))))
+	objects = append(objects, NewCube(NewVec3(0, 1, 0), 1, NewLambertian(NewVec3(0.7, 0.6, 0.5))))
+
+	return World{Objects:objects}
+}
+
 func main() {
 
 	nx := 1200
 	ny := 800
-	ns := 10
-	depth := 10
+	ns := 50
+	depth := 30
 	img := image.NewRGBA64(image.Rect(0, 0, nx, ny))
 
 	rand.Seed(time.Now().UnixNano())
@@ -92,7 +112,7 @@ func main() {
 	//world := basicWorld()
 	world := bookCover()
 
-	lookFrom := NewVec3(13, 2, 3)
+	lookFrom := NewVec3(13, 3.5, 3)
 	lookAt := NewVec3(0, 0, 0)
 	distToFocus := 10.0
 	aperture := 0.05

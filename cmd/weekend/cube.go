@@ -19,19 +19,21 @@ func NewPlane(normal Vec3, k float64) Plane {
 }
 
 type Cube struct {
+	Center   Vec3
 	Planes   [6]Plane
 	Material Material
 }
 
 func NewCube(center Vec3, size float64, material Material) *Cube {
-	bottom := NewPlane(NewVec3(0, -1, 0), size)
-	top := NewPlane(NewVec3(0, 1, 0), size)
-	left := NewPlane(NewVec3(-1, 0, 0), size)
-	right := NewPlane(NewVec3(1, 0, 0), size)
-	front := NewPlane(NewVec3(0, 0, -1), size)
-	back := NewPlane(NewVec3(0, 0, 1), size)
+	bottom := NewPlane(NewVec3(0, -1, 0), size/2.0)
+	top := NewPlane(NewVec3(0, 1, 0), size/2.0)
+	left := NewPlane(NewVec3(-1, 0, 0), size/2.0)
+	right := NewPlane(NewVec3(1, 0, 0), size/2.0)
+	front := NewPlane(NewVec3(0, 0, -1), size/2.0)
+	back := NewPlane(NewVec3(0, 0, 1), size/2.0)
 
 	return &Cube{
+		Center:   center,
 		Planes:   [6]Plane{bottom, top, left, right, front, back},
 		Material: material,
 	}
@@ -42,8 +44,9 @@ func (c *Cube) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 	// Suppose a normal (xn, yn, zn) and a value k such that every point on the plane is given by
 	//  x*xn + y*yn + z*zn = k
 	//
-	// If the normal to the plane is (0, 1, 0) with k = 4.
-	//  Every point on the plane is given by x*0, y*1, z*0 = 4
+	// As an example, imagine the normal (0, 0, 1) and k=4.  This is a plane hovering at z=4.
+	//  Every point on the plane can be expressed by x*0 + y*0 + z*1 = 4, in other words, it
+	//  doesn't mater the x and y as long as z=4, so a plane hovering at z=4
 	//
 	// Ray (x,y,z) = (sx,sy,sz) + m (dx,dy,dz)
 	// where (sx,sy,sz) = source
@@ -108,15 +111,17 @@ func (c *Cube) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 	//  From here we can calculate the point and then the distance to the origin
 	//
 
-	hits := []Hit{}
-	//hits := Hits{hits: make([]Hit, 6)}
+	// We need to move the cube to the origin so we can rotate it.  The easiest way
+	//  is simply to ignore its center.  But then we also need to move the ray
+	//  the same distance so create a copy ray which is translated
+	rayCopy := ray.SubtractVec3(c.Center)
 
+	// Compute the intersection with each plane
+	var hits []*Hit
 	for _, plane := range c.Planes {
 
 		// Determine where our ray intersects the plane
-		dot := ray.Direction.Dot(plane.Normal)
-
-		//fmt.Println("d: ", dot)
+		dot := rayCopy.Direction.Dot(plane.Normal)
 
 		if dot == 0.0 {
 			// Okay, so this ray is either above, below, or contained in the plane.
@@ -126,42 +131,48 @@ func (c *Cube) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 			plane_d := plane.K / (square(plane.Normal.X()) + square(plane.Normal.Y()) + square(plane.Normal.Z()))
 
 			// Now determine the distance from the line to the center.
-			m := -(ray.Origin.X()*ray.Direction.X() + ray.Origin.Y()*ray.Direction.Y() + ray.Origin.Z()*ray.Direction.Z())
+			m := -(rayCopy.Origin.X()*rayCopy.Direction.X() + rayCopy.Origin.Y()*rayCopy.Direction.Y() + rayCopy.Origin.Z()*rayCopy.Direction.Z())
 			closestPoint := ray.PointAt(m)
 			line_d := math.Sqrt(square(closestPoint.X()) + square(closestPoint.Y()) + square(closestPoint.Z()))
 
 			if line_d >= plane_d {
 				return nil, nil
 			}
+
+			// Otherwise, just skip this as we will intersect some other plane.
 			continue
 		}
 
-		n := plane.K - (ray.Origin.X()*plane.Normal.X() +
-			ray.Origin.Y()*plane.Normal.Y() +
-			ray.Origin.Z()*plane.Normal.Z())
+		n := plane.K - (rayCopy.Origin.X()*plane.Normal.X() +
+			rayCopy.Origin.Y()*plane.Normal.Y() +
+			rayCopy.Origin.Z()*plane.Normal.Z())
 
 		m := n / dot
 
-		hits = append(hits, Hit{Scalar: m, Point: ray.PointAt(m), Normal: plane.Normal})
+		// For calculating the hit, use the actual ray
+		hits = append(hits, &Hit{Scalar: m, Point: ray.PointAt(m), Normal: plane.Normal})
 	}
 
-	sort.Sort(hits)
+	sort.Slice(hits, func(i, j int) bool {
+		return hits[i].Scalar < hits[j].Scalar
+	})
 
 	// Assume the first hit is going in
 	in := true
 
-	last_m := 0.0
-	for i := 0; i < hits.Len(); i++ {
-		hit := hits.Get(i)
+	var lastHit *Hit
+	for _, hit := range hits {
 
-		if hit.dot < 0 {
+		dot := rayCopy.Direction.Dot(hit.Normal)
+
+		if dot < 0 {
 			// Normal is pointing in opposite direction of ray so this is an IN
 			if in {
 				// The last one was also going in so this is our new last_m
-				last_m = hit.m
+				lastHit = hit
 			} else {
 				// The last one was going out and this is an IN so we missed
-				return false, 0
+				return nil, nil
 			}
 		} else {
 			// Normal and ray are pointing in the same direction so this is an OUT
@@ -169,7 +180,14 @@ func (c *Cube) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 		}
 	}
 
-	return true, last_m
+	//log.Printf("%v", lastHit)
+	//log.Printf("%v", c.Material)
+
+	if lastHit.Scalar < tMax && lastHit.Scalar > tMin {
+		return lastHit, c.Material
+	}
+
+	return nil, nil
 }
 
 func square(x float64) float64 {
