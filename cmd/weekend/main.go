@@ -109,9 +109,10 @@ func basicWorld() []Object {
 	// Table top
 	objects = append(objects, NewBlock(NewVec3(0, -0.25, 0), 100, 100, 0.5, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.03)))
 
-	objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
-	objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
+	//objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
+	//objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
+	objects = append(objects, NewBlock(NewVec3(0, 1, 0), 2.0, 2.0,2.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
+	//objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
 
 	return objects
 }
@@ -120,28 +121,29 @@ func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan
 
 	var wg sync.WaitGroup
 
-	for point := range renderChan {
+	for i := 0; i < 500; i++ {
 		wg.Add(1)
-		go func(point Point2D) {
+		go func() {
 			defer wg.Done()
-			var c Vec3
+			for point := range renderChan {
+				var c Vec3
 
-			for s := 0; s < environment.sampling; s++ {
-				u := (float64(point.X) + rand.Float64()) / float64(environment.canvas.Width)
-				v := (float64(point.Y) + rand.Float64()) / float64(environment.canvas.Height)
+				for s := 0; s < environment.sampling; s++ {
+					u := (float64(point.X) + rand.Float64()) / float64(environment.canvas.Width)
+					v := (float64(point.Y) + rand.Float64()) / float64(environment.canvas.Height)
 
-				ray := environment.camera.GetRay(u, v)
-				c = c.AddVec3(render(ray, environment.objects, environment.bounce))
+					ray := environment.camera.GetRay(u, v)
+					c = c.AddVec3(render(ray, environment.objects, environment.bounce))
+				}
+
+				c = c.DivideScalar(float64(environment.sampling)).Gamma2()
+
+				drawChan <- ColoredPoint2D{X: point.X, Y: point.Y, C: c.RGBA()}
 			}
-
-			c = c.DivideScalar(float64(environment.sampling)).Gamma2()
-
-			drawChan <- ColoredPoint2D{X: point.X, Y: point.Y, C: c.RGBA()}
-		}(point)
+		}()
 	}
 
 	wg.Wait()
-	close(drawChan)
 }
 
 func main() {
@@ -164,8 +166,8 @@ func main() {
 		objects:  bookCover(),
 	}
 
+	// Serialize drawing to the actual image as I don't know/doubt it can handle multiple write requests
 	drawChan := make(chan ColoredPoint2D, 500)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -175,19 +177,27 @@ func main() {
 		wg.Done()
 	}()
 
-	renderChan := make(chan Point2D, 5)
-	go renderPoint(renderChan, environment, drawChan)
-
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			renderChan <- Point2D{X: x, Y: y}
+	// Create a channel to pull the points to render from
+	renderChan := make(chan Point2D, 100)
+	// Start slamming points into the channel
+	go func() {
+		for x := 0; x < width; x++ {
+			for y := 0; y < height; y++ {
+				renderChan <- Point2D{X: x, Y: y}
+			}
 		}
-	}
+		// All done sending points to render
+		close(renderChan)
+	}()
 
-	// Done sending points, but need to wait for everything to finish drawing
-	close(renderChan)
+	// Our main rendering, this blocks until all points have been rendered
+	renderPoint(renderChan, environment, drawChan)
+	// Everything has been sent to the draw channel so close it off
+	close(drawChan)
 
+	// Wait for everything to finish drawing to the canvas
 	wg.Wait()
 
+	// Write our image
 	canvas.write("drawing.png")
 }

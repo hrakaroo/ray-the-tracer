@@ -86,7 +86,7 @@ Since ray.direction is a unit vector ( dx^2 + dy^2 + dz^2 ) == 1
    m = - (rx * dx + ry * dy + rz * dz)
   From here we can calculate the point and then the distance to the origin
 
- */
+*/
 
 // A plane is a normal vector and a multiplier along that vector
 type Plane struct {
@@ -123,8 +123,6 @@ func NewBlock(center Vec3, xSize, ySize, zSize float64, material Material) *Bloc
 }
 
 func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
-
-
 
 	// We need to move the cube to the origin so we can rotate it.  The easiest way
 	//  is simply to ignore its center.  But then we also need to move the ray
@@ -172,6 +170,8 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 		return hits[i].Scalar < hits[j].Scalar
 	})
 
+	//edge := false
+
 	// Assume the first hit is going in
 	in := true
 
@@ -184,6 +184,12 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 			// Normal is pointing in opposite direction of ray so this is an IN
 			if in {
 				// The last one was also going in so this is our new last_m
+				//if lastHit != nil && math.Abs(lastHit.Scalar - hit.Scalar) < 0.005 {
+				//	// I _think_ this is an edge
+				//	edge = true
+				//} else {
+				//	edge = false
+				//}
 				lastHit = hit
 			} else {
 				// The last one was going out and this is an IN so we missed
@@ -196,6 +202,9 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 	}
 
 	if lastHit != nil && lastHit.Scalar < tMax && lastHit.Scalar > tMin {
+		//if edge {
+		//	return lastHit, NewLambertian(NewVec3(0.0, 0.0, 0.0))
+		//}
 		return lastHit, b.Material
 	}
 
