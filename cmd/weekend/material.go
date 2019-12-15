@@ -53,16 +53,19 @@ func (m *Metal) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 }
 
 type Dieletric struct {
+	Albedo Vec3
 	RefractionIndex float64
 }
 
-func NewDieletric(refractionIndex float64) *Dieletric {
-	return &Dieletric{RefractionIndex: refractionIndex}
+func NewDieletric(albedo Vec3, refractionIndex float64) *Dieletric {
+	return &Dieletric{
+		Albedo: albedo,
+		RefractionIndex: refractionIndex,
+	}
 }
 
 func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 	reflected := ray.Direction.Reflect(hit.Normal)
-	color := NewVec3(1.0, 1.0, 1.0)
 
 	var outwardNormal Vec3
 	var niOverNt float64
@@ -82,11 +85,11 @@ func (d *Dieletric) Scatter(ray Ray, hit *Hit) (Vec3, Ray) {
 
 	if refracts, refracted := ray.Direction.Refract(outwardNormal, niOverNt); refracts {
 		if rand.Float64() > schlick(cosine, d.RefractionIndex) {
-			return color, NewRay(hit.Point, refracted)
+			return d.Albedo, NewRay(hit.Point, refracted)
 		}
 	}
 
-	return color, NewRay(hit.Point, reflected)
+	return d.Albedo, NewRay(hit.Point, reflected)
 }
 
 func schlick(cosine, refractionIndex float64) float64 {

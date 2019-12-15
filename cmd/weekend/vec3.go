@@ -6,7 +6,7 @@ import (
 )
 
 /**
-Our generic 3 value struct.  We will use this for points, colors and directions.
+Our generic 3 value struct.  We will use this for points, colors and directions...
 */
 type Vec3 struct {
 	v1 float64

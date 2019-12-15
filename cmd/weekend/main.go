@@ -1,17 +1,16 @@
 package main
 
 import (
-	"image/color"
+	gocolor "image/color"
 	"math"
 	"math/rand"
 	"sync"
-	"time"
 )
 
 type ColoredPoint2D struct {
 	X int
 	Y int
-	C color.RGBA64
+	C gocolor.RGBA64
 }
 
 type Point2D struct {
@@ -46,76 +45,6 @@ func render(ray Ray, objects World, depth int) Vec3 {
 		AddVec3(NewVec3(0.5, 0.7, 1.0).MultiplyScalar(t))
 }
 
-func bookCover() []Object {
-
-	var objects []Object
-
-	// Table top
-	objects = append(objects, NewBlock(NewVec3(0, -0.25, 0), 100, 100, 0.5, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.03)))
-
-	//objects = append(objects, NewSphere(NewVec3(0, -1000, 0), 1000, NewLambertian(NewVec3(0.5, 0.5, 0.5))))
-
-	for a := -11; a < 11; a++ {
-		for b := -11; b < 11; b++ {
-			center := NewVec3(float64(a)+0.9*rand.Float64(), 0.2, float64(b)+0.9*rand.Float64())
-			if center.SubtractVec3(NewVec3(4, 0.2, 0)).Length() <= 0.9 {
-				continue
-			}
-
-			chooseMaterial := rand.Float64()
-			var material Material
-			if chooseMaterial < 0.6 {
-				// diffuse
-				material = NewLambertian(NewVec3(rand.Float64()*rand.Float64(),
-					rand.Float64()*rand.Float64(),
-					rand.Float64()*rand.Float64()))
-			} else if chooseMaterial < 0.85 {
-				// metal
-				material = NewMetal(NewVec3(0.5*(1+rand.Float64()),
-					0.5*(1+rand.Float64()),
-					0.5*(1+rand.Float64())), 0.5*rand.Float64())
-			} else {
-				// glass
-				refractionIndex := rand.Float64()/2.0 + 1.0
-				material = NewDieletric(refractionIndex)
-			}
-
-			chooseShape := rand.Float64()
-			var shape Object
-			if chooseShape < 0.25 {
-				shape = NewBlock(center, 0.4, 0.4, 0.4, material)
-			} else {
-				shape = NewSphere(center, 0.2, material)
-			}
-			objects = append(objects, shape)
-		}
-	}
-
-	objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
-	objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
-	//
-	//objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
-	//objects = append(objects, NewSphere(NewVec3(-4, 1, 0), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	//objects = append(objects, NewSphere(NewVec3(4, 1, 0), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
-
-	return objects
-}
-
-func basicWorld() []Object {
-
-	var objects []Object
-
-	// Table top
-	objects = append(objects, NewBlock(NewVec3(0, -0.25, 0), 100, 100, 0.5, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.03)))
-
-	//objects = append(objects, NewSphere(NewVec3(0, 1, 0), 1.0, NewDieletric(1.5)))
-	//objects = append(objects, NewSphere(NewVec3(-1, 1, -4), 1.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	objects = append(objects, NewBlock(NewVec3(0, 1, 0), 2.0, 2.0,2.0, NewLambertian(NewVec3(0.4, 0.2, 0.1))))
-	//objects = append(objects, NewSphere(NewVec3(1, 1, 4), 1.0, NewMetal(NewVec3(0.7, 0.6, 0.5), 0.0)))
-
-	return objects
-}
 
 func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan ColoredPoint2D) {
 
@@ -147,10 +76,14 @@ func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 
-	width  := 2400
-	height := 1600
+	// I'm not 100% sure I really need to do this.  Without it the random numbers will always be the same
+	//  which isn't going to really negatively impact the rendered output, except that multiple runs
+	//  will create the same image.
+	//rand.Seed(time.Now().UnixNano())
+
+	width  := 1200
+	height := 800
 	lookFrom := NewVec3(-5, 3, 20)
 	lookAt := NewVec3(0, 0, 0)
 	distToFocus := 20.0
@@ -161,9 +94,9 @@ func main() {
 	environment := Environment{
 		canvas:   canvas,
 		camera:   NewCamera(lookFrom, lookAt, NewVec3(0, 1, 0), 20.0, canvas.AspectRatio(), aperture, distToFocus),
-		sampling: 100,
-		bounce:   30,
-		objects:  bookCover(),
+		sampling: 40,
+		bounce:   10,
+		objects:  smallScene(),
 	}
 
 	// Serialize drawing to the actual image as I don't know/doubt it can handle multiple write requests
@@ -179,6 +112,7 @@ func main() {
 
 	// Create a channel to pull the points to render from
 	renderChan := make(chan Point2D, 100)
+
 	// Start slamming points into the channel
 	go func() {
 		for x := 0; x < width; x++ {
@@ -192,6 +126,7 @@ func main() {
 
 	// Our main rendering, this blocks until all points have been rendered
 	renderPoint(renderChan, environment, drawChan)
+
 	// Everything has been sent to the draw channel so close it off
 	close(drawChan)
 

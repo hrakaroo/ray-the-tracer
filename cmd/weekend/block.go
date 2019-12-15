@@ -88,6 +88,10 @@ Since ray.direction is a unit vector ( dx^2 + dy^2 + dz^2 ) == 1
 
 */
 
+
+
+var Black = NewLambertian(NewVec3(0.0, 0.0, 0.0))
+
 // A plane is a normal vector and a multiplier along that vector
 type Plane struct {
 	Normal Vec3
@@ -105,9 +109,10 @@ type Block struct {
 	Center   Vec3
 	Planes   [6]Plane
 	Material Material
+	Outline  bool
 }
 
-func NewBlock(center Vec3, xSize, ySize, zSize float64, material Material) *Block {
+func NewBlock(center Vec3, xSize, ySize, zSize float64, material Material, outline bool) *Block {
 	bottom := NewPlane(NewVec3(0, -1, 0), zSize/2.0)
 	top := NewPlane(NewVec3(0, 1, 0), zSize/2.0)
 	left := NewPlane(NewVec3(-1, 0, 0), xSize/2.0)
@@ -119,6 +124,63 @@ func NewBlock(center Vec3, xSize, ySize, zSize float64, material Material) *Bloc
 		Center:   center,
 		Planes:   [6]Plane{bottom, top, left, right, front, back},
 		Material: material,
+		Outline:  outline,
+	}
+}
+
+
+func (b *Block) RotateX(degrees float64) *Block {
+
+	// degree = rad × 180/π
+	// rad = degree * PI / 180
+	rad := degrees * math.Pi / 180.0
+
+	//  https://en.wikipedia.org/wiki/Rotation_matrix
+	matrix := Matrix{[3]Row{
+		{1, 0, 0},
+		{0, math.Cos(rad), -math.Sin(rad)},
+		{0, math.Sin(rad), math.Cos(rad)},
+	}}
+
+	var planes [6]Plane
+
+	for i, plane := range b.Planes {
+		planes[i] = NewPlane(matrix.multiplyPoint(plane.Normal), plane.K)
+	}
+
+	return &Block{
+		Center:    b.Center,
+		Planes:    planes,
+		Material:  b.Material,
+		Outline:   b.Outline,
+	}
+}
+
+
+func (b *Block) RotateY(degrees float64) *Block {
+
+	// degree = rad × 180/π
+	// rad = degree * PI / 180
+	rad := degrees * math.Pi / 180.0
+
+	//  https://en.wikipedia.org/wiki/Rotation_matrix
+	matrix := Matrix{[3]Row{
+		{math.Cos(rad), 0, math.Sin(rad)},
+		{0, 1, 0},
+		{-math.Sin(rad), 0, math.Cos(rad)},
+	}}
+
+	var planes [6]Plane
+
+	for i, plane := range b.Planes {
+		planes[i] = NewPlane(matrix.multiplyPoint(plane.Normal), plane.K)
+	}
+
+	return &Block{
+		Center:    b.Center,
+		Planes:    planes,
+		Material:  b.Material,
+		Outline:   b.Outline,
 	}
 }
 
@@ -170,7 +232,7 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 		return hits[i].Scalar < hits[j].Scalar
 	})
 
-	//edge := false
+	edge := false
 
 	// Assume the first hit is going in
 	in := true
@@ -184,12 +246,12 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 			// Normal is pointing in opposite direction of ray so this is an IN
 			if in {
 				// The last one was also going in so this is our new last_m
-				//if lastHit != nil && math.Abs(lastHit.Scalar - hit.Scalar) < 0.005 {
-				//	// I _think_ this is an edge
-				//	edge = true
-				//} else {
-				//	edge = false
-				//}
+				if lastHit != nil && math.Abs(lastHit.Scalar - hit.Scalar) < 0.005 {
+					// I _think_ this is an edge
+					edge = true
+				} else {
+					edge = false
+				}
 				lastHit = hit
 			} else {
 				// The last one was going out and this is an IN so we missed
@@ -202,9 +264,9 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 	}
 
 	if lastHit != nil && lastHit.Scalar < tMax && lastHit.Scalar > tMin {
-		//if edge {
-		//	return lastHit, NewLambertian(NewVec3(0.0, 0.0, 0.0))
-		//}
+		if b.Outline && edge {
+			return lastHit, Black
+		}
 		return lastHit, b.Material
 	}
 
@@ -213,4 +275,28 @@ func (b *Block) Hit(ray Ray, tMin, tMax float64) (*Hit, Material) {
 
 func square(x float64) float64 {
 	return x * x
+}
+
+
+type Row struct {
+	X float64
+	Y float64
+	Z float64
+}
+
+type Matrix struct {
+	Rows [3]Row
+}
+
+func (r *Row) multiplyPoint(point Vec3) float64 {
+	return r.X*point.X() + r.Y*point.Y() + r.Z*point.Z()
+}
+
+func (m *Matrix) multiplyPoint(point Vec3) Vec3 {
+
+	x1 := m.Rows[0].multiplyPoint(point)
+	y1 := m.Rows[1].multiplyPoint(point)
+	z1 := m.Rows[2].multiplyPoint(point)
+
+	return NewVec3(x1, y1, z1)
 }
