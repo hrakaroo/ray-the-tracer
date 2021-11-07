@@ -52,9 +52,9 @@ func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan
 
 	for i := 0; i < 500; i++ {
 		wg.Add(1)
-		go func() {
+		go func(in <-chan Point2D) {
 			defer wg.Done()
-			for point := range renderChan {
+			for point := range in {
 				var c Vec3
 
 				for s := 0; s < environment.sampling; s++ {
@@ -69,7 +69,7 @@ func renderPoint(renderChan chan Point2D, environment Environment, drawChan chan
 
 				drawChan <- ColoredPoint2D{X: point.X, Y: point.Y, C: c.RGBA()}
 			}
-		}()
+		}(renderChan)
 	}
 
 	wg.Wait()
@@ -103,26 +103,26 @@ func main() {
 	drawChan := make(chan ColoredPoint2D, 500)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func() {
-		for point := range drawChan {
+	go func(in <-chan ColoredPoint2D) {
+		for point := range in {
 			canvas.Draw(point.X, point.Y, point.C)
 		}
 		wg.Done()
-	}()
+	}(drawChan)
 
 	// Create a channel to pull the points to render from
 	renderChan := make(chan Point2D, 100)
 
-	// Start slamming points into the channel
-	go func() {
+	// Start slamming points into the render channel
+	go func(out chan<- Point2D) {
 		for x := 0; x < width; x++ {
 			for y := 0; y < height; y++ {
-				renderChan <- Point2D{X: x, Y: y}
+				out <- Point2D{X: x, Y: y}
 			}
 		}
 		// All done sending points to render
-		close(renderChan)
-	}()
+		close(out)
+	}(renderChan)
 
 	// Our main rendering, this blocks until all points have been rendered
 	renderPoint(renderChan, environment, drawChan)
